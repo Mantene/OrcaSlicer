@@ -2959,6 +2959,18 @@ void PresetCollection::save_current_preset(const std::string &new_name, bool det
             preset.config.option<ConfigOptionString>("print_settings_id", true)->value = new_name;
         else if (m_type == Preset::TYPE_FILAMENT)
             preset.config.option<ConfigOptionStrings>("filament_settings_id", true)->values[0] = new_name;
+            // Generate a unique filament_id for user presets that don't have one yet (PR #13315).
+            if (preset.filament_id.empty() || preset.filament_id.front() != 'P') {
+                boost::uuids::detail::md5 hash;
+                boost::uuids::detail::md5::digest_type digest;
+                hash.process_bytes(new_name.data(), new_name.size());
+                hash.get_digest(digest);
+                const auto char_digest = reinterpret_cast<const char *>(&digest);
+                std::string result;
+                boost::algorithm::hex(char_digest, char_digest + sizeof(boost::uuids::detail::md5::digest_type), std::back_inserter(result));
+                preset.filament_id = "P" + result.substr(0, 7);
+            }
+        }
         else if (m_type == Preset::TYPE_PRINTER)
             preset.config.option<ConfigOptionString>("printer_settings_id", true)->value = new_name;
         final_inherits = preset.inherits();
