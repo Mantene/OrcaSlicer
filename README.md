@@ -1,85 +1,58 @@
-<div align="center">
+# OrcaSlicer-KX
 
-<picture>
-  <img alt="OrcaSlicer logo" src="resources/images/OrcaSlicer.png" width="15%" height="15%">
-</picture>
+**OrcaSlicer mit KX-Bridge-Patches für den Anycubic Kobra X**
 
-<a href="https://trendshift.io/repositories/15552" target="_blank"><img src="https://trendshift.io/api/badge/repositories/15552" alt="OrcaSlicer%2FOrcaSlicer | Trendshift" style="width: 250px; height: 55px;" width="250" height="55"/></a>
+Fertige Binaries von [OrcaSlicer](https://github.com/SoftFever/OrcaSlicer) mit integrierten KX-spezifischen Erweiterungen — empfohlen für den Einsatz mit [KX-Bridge](https://gitea.it-drui.de/viewit/KX-Bridge-Release).
 
-[![GitHub Repo stars](https://img.shields.io/github/stars/OrcaSlicer/OrcaSlicer)](https://github.com/OrcaSlicer/OrcaSlicer/stargazers) [![Build all](https://github.com/OrcaSlicer/OrcaSlicer/actions/workflows/build_all.yml/badge.svg?branch=main)](https://github.com/OrcaSlicer/OrcaSlicer/actions/workflows/build_all.yml)
+[![Download](https://img.shields.io/badge/Download-Releases-2EA043?style=for-the-badge&logo=gitea&logoColor=white)](https://gitea.it-drui.de/viewit/OrcaSlicer-KX/releases)
 
-OrcaSlicer: an open source Next-Gen Slicing Software for Precision 3D Prints.  
-Optimize your prints with ultra-fast slicing, intelligent support generation, and seamless printer compatibility—engineered for perfection.
+---
 
-# Official links and community
+## Download
 
-#### Official Website:
+Aktuelle Version: **2.4.0-kx1** (Basis: OrcaSlicer 2.4.0 stable)
 
-<a href="https://www.orcaslicer.com/" style="font-size:2em;">OrcaSlicer.com</a>
+| Plattform | Datei | Hinweis |
+|-----------|-------|---------|
+| Linux x86_64 | `OrcaSlicer-KX-Linux-x86_64.AppImage` | `chmod +x` setzen, dann starten |
+| Windows x86_64 | `OrcaSlicer-KX-Windows-x86_64.zip` | Entpacken, `orca-slicer.exe` starten |
 
-#### Github Repository:
+macOS wird nicht bereitgestellt — bitte aus dem Upstream selbst bauen.
 
-<a href="https://github.com/OrcaSlicer/OrcaSlicer"><img src="https://img.shields.io/badge/OrcaSlicer-181717?style=flat&logo=github&logoColor=white" width="200" alt="GitHub Logo"/> </a>
+---
 
-#### Follow us:
+## Enthaltene Patches
 
-<a href="https://twitter.com/real_OrcaSlicer"><img src="https://img.shields.io/badge/real__OrcaSlicer-000000?style=flat&logo=x&logoColor=white" width="200" alt="X Logo"/> </a>  
-<a href="https://www.youtube.com/@OfficialOrcaSlicer"><img src="https://img.shields.io/badge/OfficialOrcaSlicer-FF0000?style=flat&logo=youtube&logoColor=white" width="200" alt="YouTube Logo"/> </a>
+- **Moonraker-Bridge:** mehrstufiges Filament-Matching (Name, Sub-Brand, Vendor-Fallback) mit Vendor-Filter-Skip
+- **AMS-Leerslot-Fix:** leere AMS-Slots werden korrekt grau dargestellt (kein Absturz / falsches Filament)
+- **Filament-ID:** eindeutige `filament_id` für abgeleitete User-Presets (korrekte Bridge-Synchronisation)
+- **Kobra X Profile:** Drucker- und G-Code-Profile für den Anycubic Kobra X
 
-#### Join our Discord community:
+---
 
-<a href="https://discord.gg/P4VE9UY9gJ"><img src="https://img.shields.io/badge/-Discord-5865F2?style=flat&logo=discord&logoColor=fff" width="200" alt="discord logo"/> </a>
+## Filament-Presets & KX-Bridge
 
-<table border="2" style="border-color: #ffa500; background-color:rgb(232, 220, 180); color: #856404;">
-<tr>
-<td>
-<strong>⚠️ CAUTION:</strong><br>
-Several clickbait and malicious websites, such as <b>orca-slicer[.]com</b> and <b>orcaslicer[.]net</b>, are pretending to be the official OrcaSlicer site. These sites may redirect you to dangerous downloads or contain misleading information.<br>
-<b>Our only official website is <a href="https://www.orcaslicer.com/">www.orcaslicer.com</a>.</b><br><br>
-If you come across any of these in search results, please <b>report them</b> as unsafe or phishing to help keep the community secure with:<br>
- - <a href="https://safebrowsing.google.com/safebrowsing/report_phish/">Google Safe Browsing</a><br>
- - <a href="https://www.microsoft.com/en-us/wdsi/support/report-unsafe-site">Microsoft Security Intelligence</a><br>
- - <a href="https://ipthreat.net/tools/reportphishing">IPThreat</a>
-</td>
-</tr>
-</table>
+📄 [Anleitung: eigene Filament-Presets erstellen, prüfen und importieren](https://gitea.it-drui.de/viewit/KX-Bridge-Release/src/branch/master/docs/filament-preset-bridge-guide.md)
 
-</div>
+---
 
-# Main features
+## Branch-Struktur
 
-- **[Advanced Calibration Tools](https://www.orcaslicer.com/wiki/calibration_guide)**  
-  Comprehensive suite: temperature towers, flow rate, retraction & more for optimal performance.
-- **[Precise Wall](https://www.orcaslicer.com/wiki/quality_settings_precision#precise-wall) and [Seam Control](https://www.orcaslicer.com/wiki/quality_settings_seam)**  
-  Adjust outer wall spacing and apply scarf seams to enhance print accuracy.
-- **[Sandwich Mode](https://www.orcaslicer.com/wiki/quality_settings_wall_and_surfaces#innerouterinner) and [Polyholes](https://www.orcaslicer.com/wiki/quality_settings_precision#polyholes) Support**  
-  Use varied infill [patterns](https://www.orcaslicer.com/wiki/strength_settings_patterns) and accurate hole shapes for improved clarity.
-- **[Overhang](https://www.orcaslicer.com/wiki/quality_settings_overhangs) and [Support Optimization](https://www.orcaslicer.com/wiki#support-settings)**  
-  Modify geometry for printable overhangs with precise support placement.
-- **[Granular Controls and Customization](https://www.orcaslicer.com/wiki#process-settings)**  
-  Fine-tune print speed, layer height, pressure, and temperature with precision.
-- **Network Printer Support**  
-  Seamless integration with Klipper, PrusaLink, and OctoPrint for remote control.
-- **[Mouse Ear Brims](https://www.orcaslicer.com/wiki/others_settings_brim) & [Adaptive Bed Mesh](https://www.orcaslicer.com/wiki/printer_basic_information_adaptive_bed_mesh)**  
-  Automatic brims and adaptive mesh calibration ensure consistent adhesion.
-- **User-Friendly Interface**  
-  Intuitive drag-and-drop design with pre-made profiles for popular printers.
-- **[Open-Source](https://github.com/OrcaSlicer/OrcaSlicer) & [Community Driven](https://discord.gg/P4VE9UY9gJ)**  
-  Regular updates fueled by continuous community contributions.
-- **Wide Printer Compatibility**  
-  Supports a broad range of printers: Bambu Lab, Prusa, Creality, Voron, and more.
-- Additional features can be found in the [change notes](https://github.com/OrcaSlicer/OrcaSlicer/releases/).
+| Branch | Version | Rolle |
+|--------|---------|-------|
+| `stable` / `kx-v2.4` | 2.4.0-kx1 | **aktuell stabil** |
+| `kx-v2.3` | 2.3.2-kx4 | eingefroren (Altstand) |
 
-# Wiki
+---
 
-The [wiki](https://www.orcaslicer.com/wiki) aims to provide a detailed explanation of the slicer settings, including how to maximize their use and how to calibrate and set up your printer.
+## Warum ein eigenes Repo?
 
-- **[Access the wiki here](https://www.orcaslicer.com/wiki)**
-- **[Contribute to the wiki](https://www.orcaslicer.com/wiki/how_to_wiki)**
+KX-Bridge selbst liegt unter [viewit/KX-Bridge-Release](https://gitea.it-drui.de/viewit/KX-Bridge-Release).
+OrcaSlicer steht unter AGPL-3.0 — ein separates Repo hält Lizenzen, Quellherkunft und Update-Zyklen sauber getrennt.
 
-# Download
+---
 
-## Stable Release
+## Lizenz & Quelle
 
 📥 **[Download the Latest Stable Release](https://github.com/OrcaSlicer/OrcaSlicer/releases/latest)**  
 Visit our GitHub Releases page for the latest stable version of OrcaSlicer, recommended for most users.
@@ -257,3 +230,5 @@ The OrcaSlicer logo was designed by community member [Justin Levine](https://git
 - The **GNU Affero General Public License**, version 3 ensures that if you use any part of this software in any way (even behind a web server), your software must be released under the same license.
 - OrcaSlicer includes a **pressure advance calibration pattern test** adapted from Andrew Ellis' generator, which is licensed under GNU General Public License, version 3. Ellis' generator is itself adapted from a generator developed by Sineos for Marlin, which is licensed under GNU General Public License, version 3.
 - The **Bambu networking plugin** is based on non-free libraries from BambuLab. It is optional to the OrcaSlicer and provides extended functionalities for Bambulab printer users.
+Diese Builds sind Ableitungen von [OrcaSlicer](https://github.com/SoftFever/OrcaSlicer), lizenziert unter **GNU AGPL-3.0**.
+Der KX-Patch-Quellcode liegt auf Branch [`kx-v2.4`](https://gitea.it-drui.de/viewit/OrcaSlicer-KX/src/branch/kx-v2.4) dieses Repos.
