@@ -88,6 +88,167 @@ std::string map_moonraker_state(std::string state)
     return "IDLE";
 }
 
+std::string normalize_filament_name_for_match(const std::string& input)
+{
+    std::string normalized = input;
+    boost::trim(normalized);
+    // Ignore profile suffixes like " @0.4 nozzle" for name matching.
+    if (const auto suffix_pos = normalized.find(" @"); suffix_pos != std::string::npos) {
+        normalized = normalized.substr(0, suffix_pos);
+    }
+    // Remove non-name symbols (e.g. trademark signs) while preserving separators
+    // commonly used in filament names.
+    std::string cleaned;
+    cleaned.reserve(normalized.size());
+    for (unsigned char c : normalized) {
+        if (std::isalnum(c) || c == '-' || c == '+' || c == '/' || std::isspace(c)) {
+            cleaned.push_back(static_cast<char>(std::toupper(c)));
+        } else {
+            cleaned.push_back(' ');
+        }
+    }
+
+    // Collapse repeated whitespace.
+    std::string collapsed;
+    collapsed.reserve(cleaned.size());
+    bool prev_space = true;
+    for (unsigned char c : cleaned) {
+        if (std::isspace(c)) {
+            if (!prev_space) {
+                collapsed.push_back(' ');
+            }
+            prev_space = true;
+        } else {
+            collapsed.push_back(static_cast<char>(c));
+            prev_space = false;
+        }
+    }
+    boost::trim(collapsed);
+    return collapsed;
+}
+
+bool filament_name_match_relaxed(const std::string& wanted, const std::string& candidate)
+{
+    if (wanted == candidate) {
+        return true;
+    }
+
+    // Allow lane names with trailing color descriptors, e.g.:
+    // "ELEGOO RAPID PETG GREY" -> "ELEGOO RAPID PETG".
+    if (!candidate.empty() && boost::starts_with(wanted, candidate + " ")) {
+        return true;
+    }
+    return false;
+}
+
+std::vector<std::string> vendor_match_candidates(std::string vendor)
+{
+    std::vector<std::string> candidates;
+    boost::trim(vendor);
+    if (vendor.empty()) {
+        return candidates;
+    }
+
+    candidates.push_back(vendor);
+
+    // Also try first token (e.g. "Bambu Lab" -> "Bambu") without hardcoded aliases.
+    const auto first_space = vendor.find_first_of(" \t");
+    if (first_space != std::string::npos) {
+        std::string first = vendor.substr(0, first_space);
+        boost::trim(first);
+        if (!first.empty() && !boost::iequals(first, vendor)) {
+            candidates.push_back(first);
+        }
+    }
+    return candidates;
+}
+
+std::string filament_id_by_name(const Slic3r::PresetCollection& filaments,
+                                const std::string&             filament_name,
+                                const std::vector<std::string>& vendor_filters = {})
+{
+    if (filament_name.empty()) {
+        BOOST_LOG_TRIVIAL(debug) << "MoonrakerPrinterAgent: filament matcher received empty filament name";
+        return "";
+    }
+
+    const std::string wanted = normalize_filament_name_for_match(filament_name);
+    std::vector<std::string> normalized_vendor_filters;
+    normalized_vendor_filters.reserve(vendor_filters.size());
+    for (const auto& vendor_filter : vendor_filters) {
+        const std::string normalized_vendor = normalize_filament_name_for_match(vendor_filter);
+        if (!normalized_vendor.empty()) {
+            normalized_vendor_filters.push_back(normalized_vendor);
+        }
+    }
+
+    BOOST_LOG_TRIVIAL(debug) << "MoonrakerPrinterAgent: filament matcher lookup requested='" << filament_name
+                             << "' normalized='" << wanted << "' vendor_filters=" << normalized_vendor_filters.size();
+
+    // Two-pass search: Pass 1 = compatible presets only (ideal), Pass 2 = all visible presets
+    // (fallback for vendors like eSUN/Eryone that have no printer-specific Kobra X profile).
+    for (int pass = 1; pass <= 3; ++pass) {
+        for (size_t i = 0; i < filaments.size(); ++i) {
+            const auto& preset = filaments.preset(i);
+            // Pass 1: compatible + visible only
+            // Pass 2: visible but not necessarily compatible (vendors without printer-specific profile)
+            // Pass 3: any preset including invisible (vendors not installed as printer)
+            if (pass <= 2 && !preset.is_visible) {
+                continue;
+            }
+            // User presets (created via "Save As") may have no filament_id yet.
+            // We still match them by name and use their name as the identifier.
+            const std::string preset_id = preset.filament_id.empty() ? preset.name : preset.filament_id;
+            if (pass == 1 && !preset.is_compatible) {
+                continue; // Pass 1: only compatible presets
+            }
+            // Skip the vendor filter for user presets: a preset derived from a
+            // vendor-specific parent (e.g. "Anycubic PLA Matte @...") resolves
+            // filament_vendor from the PARENT ("Anycubic"), not from the user
+            // preset itself ("Tinmorry"), so the filter would wrongly drop it
+            // and the AMS sync falls back to the vendor preset (Issue #52). The
+            // strict name match below is discriminating enough for user presets.
+            if (!preset.is_user() && !normalized_vendor_filters.empty()) {
+                const std::string preset_vendor = normalize_filament_name_for_match(preset.config.opt_string("filament_vendor", 0u));
+                bool vendor_match = false;
+                for (const auto& vendor_filter : normalized_vendor_filters) {
+                    if (preset_vendor == vendor_filter) {
+                        vendor_match = true;
+                        break;
+                    }
+                }
+                if (!vendor_match) {
+                    if (pass == 1) {
+                        BOOST_LOG_TRIVIAL(debug) << "MoonrakerPrinterAgent: filament matcher skip preset='" << preset.name
+                                                 << "' reason=vendor_filter_miss preset_vendor='" << preset_vendor << "'";
+                    }
+                    continue;
+                }
+            }
+            const std::string candidate = normalize_filament_name_for_match(preset.name);
+            BOOST_LOG_TRIVIAL(debug) << "MoonrakerPrinterAgent: filament matcher compare (pass=" << pass << ") preset='" << preset.name
+                                     << "' normalized='" << candidate << "' preset_id='" << preset_id << "'";
+            if (filament_name_match_relaxed(wanted, candidate)) {
+                BOOST_LOG_TRIVIAL(info) << "MoonrakerPrinterAgent: filament matcher matched (pass=" << pass << ") requested='" << filament_name
+                                        << "' normalized='" << wanted << "' to preset='" << preset.name
+                                        << "' preset_id='" << preset_id << "'";
+                return preset_id;
+            }
+        }
+        if (pass == 1) {
+            BOOST_LOG_TRIVIAL(info) << "MoonrakerPrinterAgent: filament matcher pass 1 (compatible) found no match for '"
+                                    << filament_name << "', trying pass 2 (all visible)";
+        } else if (pass == 2) {
+            BOOST_LOG_TRIVIAL(info) << "MoonrakerPrinterAgent: filament matcher pass 2 (all visible) found no match for '"
+                                    << filament_name << "', trying pass 3 (all presets incl. invisible)";
+        }
+    }
+    BOOST_LOG_TRIVIAL(info) << "MoonrakerPrinterAgent: filament matcher found no match for requested='" << filament_name
+                            << "' normalized='" << wanted << "'";
+    return "";
+}
+
+
 } // namespace
 
 namespace Slic3r {
