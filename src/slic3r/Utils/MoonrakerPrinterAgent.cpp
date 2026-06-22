@@ -975,10 +975,34 @@ bool MoonrakerPrinterAgent::fetch_moonraker_filament_data(std::vector<AmsTrayDat
         tray.bed_temp = safe_json_int(lane_obj, "bed_temp");
         tray.nozzle_temp = safe_json_int(lane_obj, "nozzle_temp");
         tray.has_filament = !tray.tray_type.empty();
+        const std::string lane_name = safe_json_string(lane_obj, "name");
+        const std::string lane_vendor = safe_json_string(lane_obj, "vendor_name");
+        tray.sub_brands = lane_name;
         auto* bundle = GUI::wxGetApp().preset_bundle;
-        tray.tray_info_idx = bundle
-            ? bundle->filaments.filament_id_by_type(tray.tray_type)
-            : map_filament_type_to_generic_id(tray.tray_type);
+        if (bundle) {
+            const auto vendor_candidates = vendor_match_candidates(lane_vendor);
+            auto match_with_vendor_prefix = [&](const std::string& suffix) -> std::string {
+                if (suffix.empty()) return "";
+                for (const auto& vendor_candidate : vendor_candidates) {
+                    const std::string requested = vendor_candidate + " " + suffix;
+                    std::string match_id = filament_id_by_name(bundle->filaments, requested, vendor_candidates);
+                    if (!match_id.empty()) return match_id;
+                }
+                return "";
+            };
+            tray.tray_info_idx = match_with_vendor_prefix(lane_name);
+            if (tray.tray_info_idx.empty())
+                tray.tray_info_idx = match_with_vendor_prefix(tray.tray_type);
+            if (tray.tray_info_idx.empty() && !lane_name.empty())
+                tray.tray_info_idx = filament_id_by_name(bundle->filaments, lane_name, vendor_candidates);
+            if (tray.tray_info_idx.empty())
+                tray.tray_info_idx = bundle->filaments.filament_id_by_type(tray.tray_type);
+            BOOST_LOG_TRIVIAL(info) << "MoonrakerPrinterAgent::fetch_moonraker_filament_data: lane='" << lane_key
+                                    << "' material='" << tray.tray_type << "' vendor='" << lane_vendor
+                                    << "' name='" << lane_name << "' tray_info_idx='" << tray.tray_info_idx << "'";
+        } else {
+            tray.tray_info_idx = map_filament_type_to_generic_id(tray.tray_type);
+        }
 
         max_lane_index = std::max(max_lane_index, lane_index);
         trays.push_back(tray);
@@ -1104,9 +1128,18 @@ bool MoonrakerPrinterAgent::fetch_hh_filament_info(std::vector<AmsTrayData>& tra
         tray.has_filament = true;
 
         auto* bundle = GUI::wxGetApp().preset_bundle;
-        tray.tray_info_idx = bundle
-            ? bundle->filaments.filament_id_by_type(tray.tray_type)
-            : map_filament_type_to_generic_id(tray.tray_type);
+        if (bundle) {
+            const std::string filament_name = safe_array_string(
+                mmu.contains("gate_filament_name") ? mmu["gate_filament_name"] : nlohmann::json::array(),
+                gate_idx);
+            const std::vector<std::string> vendor_candidates;
+            if (!filament_name.empty())
+                tray.tray_info_idx = filament_id_by_name(bundle->filaments, filament_name, vendor_candidates);
+            if (tray.tray_info_idx.empty())
+                tray.tray_info_idx = bundle->filaments.filament_id_by_type(tray.tray_type);
+        } else {
+            tray.tray_info_idx = map_filament_type_to_generic_id(tray.tray_type);
+        }
 
         max_lane_index = std::max(max_lane_index, gate_idx);
         trays.push_back(tray);
