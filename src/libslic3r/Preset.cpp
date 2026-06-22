@@ -2957,7 +2957,7 @@ void PresetCollection::save_current_preset(const std::string &new_name, bool det
 
         if (m_type == Preset::TYPE_PRINT)
             preset.config.option<ConfigOptionString>("print_settings_id", true)->value = new_name;
-        else if (m_type == Preset::TYPE_FILAMENT)
+        else if (m_type == Preset::TYPE_FILAMENT) {
             preset.config.option<ConfigOptionStrings>("filament_settings_id", true)->values[0] = new_name;
             // Generate a unique filament_id for user presets that don't have one yet (PR #13315).
             if (preset.filament_id.empty() || preset.filament_id.front() != 'P') {
