@@ -43,7 +43,7 @@ trap "rm -rf $TMPDIR" EXIT
 CHECKS=(
     "$VERSION"
     "KX-Bridge"
-    "filament_sub_brands"
+    "tray_sub_brands"
 )
 
 BINARY=""
