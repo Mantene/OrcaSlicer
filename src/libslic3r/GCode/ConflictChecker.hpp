@@ -26,9 +26,9 @@ using LineWithIDs = std::vector<LineWithID>;
 struct ExtrusionLayer
 {
     ExtrusionPaths paths;
-    const Layer *  layer;
-    float          bottom_z;
-    float          height;
+    const Layer *  layer  = nullptr;
+    float          bottom_z = 0.f;
+    float          height   = 0.f;
 };
 
 enum class ExtrusionLayersType { INFILL, PERIMETERS, SUPPORT, WIPE_TOWER };
