@@ -589,6 +589,13 @@ if (NOT MSVC AND ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU" OR "${CMAKE_CXX_COMP
         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-error=template-id-cdtor" )
     endif()
 
+    # GCC 13+ produces false-positive -Wmaybe-uninitialized under heavy inlining
+    # (e.g. ConflictChecker.hpp / Print.cpp). The upstream build does not set
+    # -Werror globally, but GCC 13 can internally signal exit-code 1 for these.
+    if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU" AND CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 13)
+        add_compile_options(-Wno-maybe-uninitialized)
+    endif()
+
 endif()
 
 if (SLIC3R_ASAN)
