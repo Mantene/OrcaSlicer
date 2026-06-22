@@ -43,6 +43,8 @@
 #include <boost/uuid/uuid_generators.hpp>
 #include <boost/locale.hpp>
 #include <boost/log/trivial.hpp>
+#include <boost/uuid/detail/md5.hpp>
+#include <boost/algorithm/hex.hpp>
 
 #include "libslic3r.h"
 #include "Utils.hpp"
