@@ -572,7 +572,7 @@ int OrcaCloudServiceAgent::set_config_dir(std::string cfg_dir)
 {
     config_dir = cfg_dir;
     wxFileName fallback(wxString::FromUTF8(cfg_dir.c_str()), secret_constants::USER_SECRET_FILENAME);
-    fallback.Normalize();
+    fallback.Normalize(wxPATH_NORM_ALL);
     secret_fallback_path = fallback.GetFullPath().ToStdString();
     return BAMBU_NETWORK_SUCCESS;
 }
@@ -1564,7 +1564,7 @@ void OrcaCloudServiceAgent::persist_user_secret(const std::string& secret)
             return;
         }
         wxFileName path(wxString::FromUTF8(secret_fallback_path.c_str()));
-        path.Normalize();
+        path.Normalize(wxPATH_NORM_ALL);
         if (!wxFileName::DirExists(path.GetPath())) {
             wxFileName::Mkdir(path.GetPath(), wxS_DIR_DEFAULT, wxPATH_MKDIR_FULL);
         }
@@ -2487,7 +2487,7 @@ void OrcaCloudServiceAgent::compute_fallback_path()
     if (wxTheApp == nullptr)
         return;
     wxFileName fallback(wxStandardPaths::Get().GetUserDataDir(), "orca_refresh_token.sec");
-    fallback.Normalize();
+    fallback.Normalize(wxPATH_NORM_ALL);
     secret_fallback_path = fallback.GetFullPath().ToStdString();
 }
 
