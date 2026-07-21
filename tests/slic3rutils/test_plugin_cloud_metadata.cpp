@@ -49,6 +49,18 @@ const char* const CLOUD_PLUGIN_SOURCE = R"PY(# /// script
 # version = "1.0"
 # ///
 print('ok')
+
+import orca
+class stubscript(orca.script.ScriptPluginCapabilityBase):
+    def get_name(self):
+        return "stubscript"
+    def execute(self):
+        return orca.ExecutionResult.success("Stub orca script.")
+
+@orca.plugin
+class stubpackage(orca.base):
+    def register_capabilities(self):
+        orca.register_capability(stubscript)
 )PY";
 
 } // namespace
