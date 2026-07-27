@@ -11719,6 +11719,11 @@ std::map<std::string, std::string> validate(const FullPrintConfig &cfg, bool und
         case coPercents:
             for (double v : static_cast<const ConfigOptionVector<double>*>(opt)->values)
                 if (!optdef->is_value_valid(v)) {
+                    //KX: 0 is a valid sentinel meaning "no filament cutter" for retraction_distances_when_cut.
+                    // Vendor machine profiles (e.g. Anycubic Kobra X / S1 Max) ship 0, and GCode.cpp only
+                    // enables long retraction when the value is > 0.
+                    if (opt_key == "retraction_distances_when_cut" && v == 0.)
+                        continue;
                     out_of_range = true;
                     break;
                 }
