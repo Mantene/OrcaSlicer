@@ -397,6 +397,7 @@ static PrinterTechnology get_printer_technology(const DynamicConfig &config)
 //BBS: add flush and exit
 #if defined(__linux__) || defined(__LINUX__)
 #define flush_and_exit(ret)     { boost::nowide::cout << __FUNCTION__ << " found error, return "<<ret<<", exit..." << std::endl;\
+    BOOST_LOG_TRIVIAL(error) << __FUNCTION__ << " found error, exit code " << ret;\
     g_cli_callback_mgr.stop();\
     boost::nowide::cout.flush();\
     boost::nowide::cerr.flush();\
@@ -406,6 +407,7 @@ static PrinterTechnology get_printer_technology(const DynamicConfig &config)
     return(ret);}
 #else
 #define flush_and_exit(ret)     { boost::nowide::cout << __FUNCTION__ << " found error, exit" << std::endl;\
+    BOOST_LOG_TRIVIAL(error) << __FUNCTION__ << " found error, exit code " << ret;\
     boost::nowide::cout.flush();\
     boost::nowide::cerr.flush();\
     for (Model &model : m_models) {\
@@ -3529,7 +3531,10 @@ int CLI::run(int argc, char **argv)
         printer_technology = ptFFF;
 
     //BBS: merge these models into one
-    BOOST_LOG_TRIVIAL(info) << "total " << m_models.size() << " models, "<<orients_requirement.size()<<" objects"<<std::endl;
+    size_t total_object_count = 0;
+    for (const Model &model : m_models)
+        total_object_count += model.objects.size();
+    BOOST_LOG_TRIVIAL(info) << "total " << m_models.size() << " models, " << total_object_count << " objects" << std::endl;
     if (m_models.size() > 1)
     {
         BOOST_LOG_TRIVIAL(info) << "merge all the models into one\n";
@@ -3664,8 +3669,11 @@ int CLI::run(int argc, char **argv)
     std::map<std::string, std::string> validity = m_print_config.validate(true);
     if (!validity.empty()) {
         boost::nowide::cerr << "Param values in 3mf/config error: "<< std::endl;
-        for (std::map<std::string, std::string>::iterator it=validity.begin(); it!=validity.end(); ++it)
+        BOOST_LOG_TRIVIAL(error) << "Param values in 3mf/config error:";
+        for (std::map<std::string, std::string>::iterator it=validity.begin(); it!=validity.end(); ++it) {
             boost::nowide::cerr << it->first <<": "<< it->second << std::endl;
+            BOOST_LOG_TRIVIAL(error) << it->first << ": " << it->second;
+        }
         record_exit_reson(outfile_dir, CLI_INVALID_VALUES_IN_3MF, 0, cli_errors[CLI_INVALID_VALUES_IN_3MF], sliced_info);
         flush_and_exit(CLI_INVALID_VALUES_IN_3MF);
     }
@@ -6481,6 +6489,10 @@ int CLI::run(int argc, char **argv)
         if (!outfile_dir.empty()) {
             export_3mf_file = outfile_dir + "/"+export_3mf_file;
         }
+        else if (!boost::filesystem::path(export_3mf_file).is_absolute()) {
+            //KX: no --outputdir given; resolve against CWD so logs and output show an unambiguous absolute path.
+            export_3mf_file = (boost::filesystem::current_path() / export_3mf_file).string();
+        }
 
 #if defined(__linux__) || defined(__LINUX__)
         if (g_cli_callback_mgr.is_started()) {
@@ -7470,8 +7482,10 @@ bool CLI::export_project(Model *model, std::string& path, PlateDataPtrs &partpla
 
     success = Slic3r::store_bbs_3mf(store_params);
 
-    if (success)
-        BOOST_LOG_TRIVIAL(info) << "Project exported to " << path << std::endl;
+    if (success) {
+        BOOST_LOG_TRIVIAL(warning) << "Project exported to " << path;
+        boost::nowide::cout << "3MF exported to " << path << std::endl;
+    }
     else {
         boost::nowide::cerr << "Project export to " << path << " failed" << std::endl;
         return false;
