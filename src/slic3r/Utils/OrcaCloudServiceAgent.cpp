@@ -3581,7 +3581,7 @@ std::string OrcaCloudServiceAgent::token_lock_path() const
     if (config_dir.empty())
         return {};
     wxFileName lock(wxString::FromUTF8(config_dir.c_str()), "orca_refresh_token.lock");
-    lock.Normalize();
+    lock.Normalize(wxPATH_NORM_ALL);
     return lock.GetFullPath().ToStdString();
 }
 
