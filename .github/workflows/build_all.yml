@@ -6,6 +6,7 @@ on:
      - main
      - release/*
      - belt-printer
+     - kx-nightly
     paths:
      - 'deps/**'
      - 'src/**'
