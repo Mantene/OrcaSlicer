@@ -44,6 +44,9 @@ void PluginHost::RegisterBindings(pybind11::module_& module)
 
     // Slicing print-graph data model (Print, Layer, Surface, ...).
     host_bindings::register_slicing(host);
+
+    // KX: UI-thread-marshalled commands (load_files/reslice/export_3mf).
+    host_bindings::register_actions(host);
 }
 
 } // namespace Slic3r
