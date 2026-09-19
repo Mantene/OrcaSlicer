@@ -1,10 +1,13 @@
 #include "PluginHostBindings.hpp"
 
 #include <libslic3r/Format/bbs_3mf.hpp>
+#include <libslic3r/Preset.hpp>
+#include <libslic3r/PresetBundle.hpp>
 #include <slic3r/GUI/GUI.hpp>
 #include <slic3r/GUI/GUI_App.hpp>
 #include <slic3r/GUI/PartPlate.hpp>
 #include <slic3r/GUI/Plater.hpp>
+#include <slic3r/GUI/Tab.hpp>
 
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
@@ -152,6 +155,49 @@ void register_actions(py::module_& host)
         "OrcaSlicer's temp area and is replaced by the next slice -- copy it "
         "if you need to keep it. psGCodePostProcess fires only on export in "
         "the GUI, so after reslice() this is the way to reach the result.");
+
+    actions.def(
+        "select_preset",
+        [](const std::string& type, const std::string& name) -> bool {
+            Preset::Type t;
+            if (type == "print")
+                t = Preset::TYPE_PRINT;
+            else if (type == "filament")
+                t = Preset::TYPE_FILAMENT;
+            else if (type == "printer")
+                t = Preset::TYPE_PRINTER;
+            else
+                throw std::runtime_error(
+                    "select_preset: type must be 'print', 'filament' or 'printer'");
+            return run_on_ui_blocking([t, &name]() -> bool {
+                PresetBundle* bundle = GUI::wxGetApp().preset_bundle;
+                if (bundle == nullptr)
+                    throw std::runtime_error("preset bundle not available");
+                PresetCollection& col = t == Preset::TYPE_PRINT    ? bundle->prints :
+                                        t == Preset::TYPE_FILAMENT ? bundle->filaments :
+                                                                     bundle->printers;
+                if (col.find_preset(name, /*first_visible_if_not_found=*/false) == nullptr)
+                    throw std::runtime_error("select_preset: no preset named '" + name +
+                                             "' of type '" +
+                                             std::string(t == Preset::TYPE_PRINT    ? "print" :
+                                                         t == Preset::TYPE_FILAMENT ? "filament" :
+                                                                                      "printer") +
+                                             "'");
+                GUI::Tab* tab = GUI::wxGetApp().get_tab(t);
+                if (tab == nullptr)
+                    throw std::runtime_error("preset tab not available");
+                return tab->select_preset(name);
+            });
+        },
+        py::arg("type"), py::arg("name"),
+        "Select a preset by its full name, as the sidebar combo would: type is "
+        "'print', 'filament' (first extruder slot) or 'printer'. Dependent "
+        "presets update the same way the GUI does. Raises if no preset of "
+        "that type has the given name (use orca.host.preset_bundle()'s "
+        "preset_names() to enumerate). NOTE: if the currently selected "
+        "preset has unsaved modifications, OrcaSlicer may show its "
+        "keep/discard dialog and wait for the user, exactly as a manual "
+        "switch would.");
 
     actions.def(
         "export_3mf",
