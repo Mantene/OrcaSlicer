@@ -3,6 +3,7 @@
 #include <libslic3r/Format/bbs_3mf.hpp>
 #include <slic3r/GUI/GUI.hpp>
 #include <slic3r/GUI/GUI_App.hpp>
+#include <slic3r/GUI/PartPlate.hpp>
 #include <slic3r/GUI/Plater.hpp>
 
 #include <pybind11/pybind11.h>
@@ -133,6 +134,24 @@ void register_actions(py::module_& host)
         "True while the background process is slicing. Note the scheduling "
         "gap: immediately after reslice() this may still read False for a "
         "moment before the job starts.");
+
+    actions.def(
+        "gcode_path",
+        []() -> std::string {
+            return run_on_ui_blocking([]() -> std::string {
+                GUI::PartPlate* plate = current_plater()->get_partplate_list().get_curr_plate();
+                if (plate == nullptr)
+                    throw std::runtime_error("no current plate");
+                if (!plate->is_slice_result_valid())
+                    return std::string();
+                return plate->get_tmp_gcode_path();
+            });
+        },
+        "Path of the current plate's sliced G-code (the plate's temp file), "
+        "or \"\" when the plate has no valid slice result. The file lives in "
+        "OrcaSlicer's temp area and is replaced by the next slice -- copy it "
+        "if you need to keep it. psGCodePostProcess fires only on export in "
+        "the GUI, so after reslice() this is the way to reach the result.");
 
     actions.def(
         "export_3mf",
